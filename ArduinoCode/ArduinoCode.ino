@@ -17,22 +17,24 @@
  *******************************************************************************/
 #include <Wire.h>
 #include <MS5611.h>
-#define BUZZER 3
+#define BUZZER 0
 
 MS5611 sensor(&Wire);
 
 unsigned long time1 = 0;
 float toneFreq, toneFreqLowpass, pressure, lowpassFast, lowpassSlow ;
-int ddsAcc;
+short ddsAcc = 0;
 
 
 void setup() {
   Serial.begin(9600);
+  pinMode(BUZZER, OUTPUT);
   if(sensor.connect()>0) {
     Serial.println("Error connecting...");
     delay(500);
     setup();
   }
+  ddsAcc = 0;
 }
 
 
@@ -42,30 +44,26 @@ void loop()
   sensor.Readout();
   
   pressure = sensor.GetPres();
-  Serial.println(pressure);
-  
+  //Serial.print(pressure);
+
   lowpassFast = lowpassFast + (pressure - lowpassFast) * 0.1;
   lowpassSlow = lowpassSlow + (pressure - lowpassSlow) * 0.05;
   
   toneFreq = (lowpassSlow - lowpassFast) * 50;
   
   toneFreqLowpass = toneFreqLowpass + (toneFreq - toneFreqLowpass) * 0.1;
-   
   toneFreq = constrain(toneFreqLowpass, -500, 500);
-  
-  ddsAcc += toneFreq * 100 + 2000;
+
+  ddsAcc = ddsAcc + ((toneFreq * 100) + 2000);
   
   if (toneFreq < 0 || ddsAcc > 0) 
-  {
     tone(BUZZER, toneFreq + 510);  
-  }
   else
   {
+    Serial.println("Pause"); 
     noTone(BUZZER);
   }
   
   while (millis() < time1);        //loop frequency timer
   time1 += 20;
 }
-
-//Funktioniert aktuell nur mit Arduino UNO und nicht mit ESP12e
