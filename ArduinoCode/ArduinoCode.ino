@@ -57,7 +57,7 @@ bool newData;
 float lat, lon, alt;
 unsigned long age;
 
-void setup() {
+void setup(){
   pinMode(BUZZER, OUTPUT);
   
   Serial.begin(9600);
@@ -69,17 +69,16 @@ void setup() {
 }
 
 
-void loop()
-{
-  sensor.ReadProm();                                  //calibration for MS5611
-  sensor.Readout();
-  
-  pressure = sensor.GetPres();                        //create output sound
+void loop(){
   beep();
-
-  //getGPSData(); //need to multithread
-  //writeGPSDataToSD();
   
+  if(getGPSData()){
+    writeGPSDataToSD();
+    printGPSData();    
+  }
+  else
+    Serial.println("no valid gps data");
+ 
   while (millis() < time1);        //loop frequency timer
   time1 += 20;
 }
@@ -142,6 +141,12 @@ void readFromSD(){
 }
 
 void beep(){
+  sensor.ReadProm();                                  //calibration for MS5611
+  sensor.Readout();
+  
+  pressure = sensor.GetPres();    
+  
+  //create output sound
   lowpassFast = lowpassFast + (pressure - lowpassFast) * 0.1;   
   lowpassSlow = lowpassSlow + (pressure - lowpassSlow) * 0.05;
   
@@ -160,25 +165,35 @@ void beep(){
   }
 }
 
-void getGPSData(){             //stored in lat, lon and alt
+bool getGPSData(){             //stored in lat, lon and alt
   unsigned long lage;
   for (unsigned long start = millis(); millis() - start < 1000;)
   {
-    /*while (ss.available())
+    beep();
+    while (ss.available())
     {
       char c = ss.read();
       //Serial.write(c); // uncomment this line if you want to see the GPS data flowing
       if (gps.encode(c)) // Did a new valid sentence come in?
         newData = true;
-    }*/
+    }
   }
 
   if (newData)
   {
     gps.f_get_position(&lat, &lon, &age);
+    lat = lat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : lat, 6;
+    lon = lon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : lon, 6;
     alt = gps.f_altitude();
+    alt = alt == TinyGPS::GPS_INVALID_F_ALTITUDE ? 0.0 : alt, 2;
     //speed = gps.f_speed_kmph();
   }
+
+  if(lat == 0.0 || lon == 0.0){
+    return false;
+  }
+  else
+    return true;
 }
 
 void printGPSData(){
@@ -194,13 +209,13 @@ void writeGPSDataToSD(){
     myFile = SD.open("path.txt", FILE_WRITE);
 
     if (myFile) {
-      Serial.print("Writing to test.txt...");
+      Serial.print("Writing to path.txt...");
       
-      myFile.print(lat);
+      myFile.print(lat, 6);
       myFile.print(",");
-      myFile.print(lon);
+      myFile.print(lon, 6);
       myFile.print(",");
-      myFile.println(alt);
+      myFile.println(alt, 1);
       
       myFile.close();
       Serial.println("done.");
