@@ -1,52 +1,153 @@
 /*****************************************************************************
- * Wiring for ESP12e 
- * ESP12e to MS5611
+ * Wiring for ESP12E
+ * ESP12E to MS5611
  * VIN -> VCC
  * GND -> GND
  * D1  -> SCL
  * D2  -> SDA
  * 
+ * BUZZER TO D3 (ESP12e D3 (PIN0 in Arduino IDE))
+ * 
+ * ESP to GY-GPS6MV2
+ * 3V3 -> Vcc
+ * D4  -> Rx
+ * D3  -> Tx
+ * GND -> GND
+ * 
+ * ESP to SD (pictures on git-hub)
+ * D8  -> CS
+ * D7  -> MOSI
+ * D6  -> MISO
+ * D5  -> CLK (SCK)
+ * GND -> GND
+ * 3V3 -> Vcc
+ * 
+ * 
  * Wiring for Arduino UNO
+ * UNO to MS5611
  * 5V  -> VCC
  * GND -> GND
  * A5  -> SDA
  * A4  -> SCL
  * 
- * BUZZER TO D3 (ESP12e D3 (PIN0 in Arduino IDE))
+ * BUZZER TO D3
  * 
  *******************************************************************************/
 #include <Wire.h>
 #include <MS5611.h>
-#define BUZZER 0
+#include <SPI.h>
+#include <SD.h>
+#include <SoftwareSerial.h>
+#include <TinyGPS.h>
+#define BUZZER 16 //ESP PIN D0 !!!PWM needed???!!!
+#define CS 15 //ESP PIN D8
 
 MS5611 sensor(&Wire);
+File myFile;
+TinyGPS gps;
+SoftwareSerial ss(0, 2);
 
+//variables for beeping and MS5611
 unsigned long time1 = 0;
 float toneFreq, toneFreqLowpass, pressure, lowpassFast, lowpassSlow ;
 short ddsAcc = 0;
 
+//variables for GPS
+bool newData;
+float lat, lon, alt;
+unsigned long age;
 
-void setup() {
-  Serial.begin(9600);
+void setup(){
   pinMode(BUZZER, OUTPUT);
-  if(sensor.connect()>0) {
+  
+  Serial.begin(9600);
+  Serial.print("Initializing SD card, barometer and ...");
+
+  setupSD();
+  setupMS5611();
+  setupGPS();
+}
+
+
+void loop(){
+  beep();
+  
+  if(getGPSData()){
+    writeGPSDataToSD();
+    printGPSData();    
+  }
+  else
+    Serial.println("no valid gps data");
+ 
+  while (millis() < time1);        //loop frequency timer
+  time1 += 20;
+}
+
+
+
+void setupSD(){
+  if (!SD.begin(15)) {                                //conntecting to SD card
+    Serial.println("initialization failed!");
+    while (1);                                        //deadlock and possible restart if needed
+  }
+  Serial.println("initialization done.");
+  printTestToSD();
+  readFromSD();
+}
+
+
+void setupMS5611(){
+  if(sensor.connect()>0) {                            //connecting to MS5611
     Serial.println("Error connecting...");
     delay(500);
     setup();
   }
-  ddsAcc = 0;
 }
 
 
-void loop()
-{
-  sensor.ReadProm();
+void setupGPS(){
+    ss.begin(9600);         //boudrate GPS module
+}
+
+
+
+void printTestToSD(){
+  myFile = SD.open("test.txt", FILE_WRITE);
+
+    if (myFile) {
+      Serial.print("Writing to test.txt...");
+      myFile.println("testing 1, 2, 3.");
+      myFile.close();
+      Serial.println("done.");
+    }
+    else {
+      Serial.println("error opening test.txt");
+    }
+}
+
+void readFromSD(){
+  myFile = SD.open("test.txt");
+  if (myFile) {
+    Serial.println("test.txt:");
+
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    myFile.close();
+  } 
+  else {
+    Serial.println("error opening test.txt");
+  }
+}
+
+void beep(){
+  sensor.ReadProm();                                  //calibration for MS5611
   sensor.Readout();
   
-  pressure = sensor.GetPres();
-  //Serial.print(pressure);
-
-  lowpassFast = lowpassFast + (pressure - lowpassFast) * 0.1;
+  pressure = sensor.GetPres();    
+  
+  //create output sound
+  lowpassFast = lowpassFast + (pressure - lowpassFast) * 0.1;   
   lowpassSlow = lowpassSlow + (pressure - lowpassSlow) * 0.05;
   
   toneFreq = (lowpassSlow - lowpassFast) * 50;
@@ -59,11 +160,67 @@ void loop()
   if (toneFreq < 0 || ddsAcc > 0) 
     tone(BUZZER, toneFreq + 510);  
   else
-  {
-    Serial.println("Pause"); 
+  { 
     noTone(BUZZER);
   }
-  
-  while (millis() < time1);        //loop frequency timer
-  time1 += 20;
+}
+
+bool getGPSData(){             //stored in lat, lon and alt
+  unsigned long lage;
+  for (unsigned long start = millis(); millis() - start < 1000;)
+  {
+    beep();
+    while (ss.available())
+    {
+      char c = ss.read();
+      //Serial.write(c); // uncomment this line if you want to see the GPS data flowing
+      if (gps.encode(c)) // Did a new valid sentence come in?
+        newData = true;
+    }
+  }
+
+  if (newData)
+  {
+    gps.f_get_position(&lat, &lon, &age);
+    lat = lat == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : lat, 6;
+    lon = lon == TinyGPS::GPS_INVALID_F_ANGLE ? 0.0 : lon, 6;
+    alt = gps.f_altitude();
+    alt = alt == TinyGPS::GPS_INVALID_F_ALTITUDE ? 0.0 : alt, 2;
+    //speed = gps.f_speed_kmph();
+  }
+
+  if(lat == 0.0 || lon == 0.0){
+    return false;
+  }
+  else
+    return true;
+}
+
+void printGPSData(){
+  Serial.print("lat=");
+  Serial.print(lat, 6);
+  Serial.print("   lon=");
+  Serial.print(lon, 6);
+  Serial.print("   alt=");
+  Serial.println(alt);
+}
+
+void writeGPSDataToSD(){
+    myFile = SD.open("path.txt", FILE_WRITE);
+
+    if (myFile) {
+      Serial.print("Writing to path.txt...");
+      
+      myFile.print(lat, 6);
+      myFile.print(",");
+      myFile.print(lon, 6);
+      myFile.print(",");
+      myFile.println(alt, 1);
+      
+      myFile.close();
+      Serial.println("done.");
+    }
+    else {
+      Serial.println("error opening test.txt");
+    }
 }
