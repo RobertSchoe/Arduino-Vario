@@ -16,23 +16,27 @@
  *******************************************************************************/
 #include <SPI.h>
 #include <SD.h>
-
 #define CS 15 //ESP PIN D8
 
-
 File myFile;
+char path[23];
+bool headerwritten;
 
 class GPSTask : public Task{
   
   protected:
   void setup(){
     Serial.println("setup sd task");
+    getPath();
     setupSD();
   }
   
   void loop(){
-    myFile = SD.open("path.txt", FILE_WRITE);
-    writeGPSDataToSD();
+    
+    if(lat != 0.0 && lon!= 0.0){
+      headerwritten = headerwritten == true ? true : writeFileHeader();
+      writeGPSDataToSD();
+    }
     myFile.close();
     delay(4000);
   }
@@ -48,18 +52,19 @@ class GPSTask : public Task{
   }
   
   void writeGPSDataToSD(){
-    //myFile = SD.open("path.txt", FILE_WRITE);
+    myFile = SD.open(path, FILE_WRITE);
 
     if (myFile) {
       Serial.print("Writing to path.txt...");
-      
-      myFile.print(lat, 6);
-      myFile.print(",");
-      myFile.print(lon, 6);
-      myFile.print(",");
+
+      myFile.print(thour);    myFile.print(":");
+      myFile.print(tminute);  myFile.print(":");
+      myFile.print(tsecond);  myFile.print("-");
+      myFile.print(lat, 6);   myFile.print(",");
+      myFile.print(lon, 6);   myFile.print(",");
       myFile.println(alt,1);
 
-      //myFile.close();
+      myFile.close();
       Serial.println("done.");
     }
     else {
@@ -68,8 +73,8 @@ class GPSTask : public Task{
     }
   }
 
-  void readFromSD(){
-    myFile = SD.open("test.txt");
+  /*void readFromSD(){ // not needed so far
+    myFile = SD.open(path);
     if (myFile) {
       Serial.println("test.txt:");
 
@@ -81,6 +86,46 @@ class GPSTask : public Task{
     else {
       Serial.println("error opening test.txt");
       setup();
+    }
+  }*/
+  void getPath(){
+    String spath;
+    
+    for(int i=100000; i<999999; i++){
+      spath = "routes/";
+      spath+=i;
+      spath+=".txt";
+      
+      Serial.println(spath);
+      spath.toCharArray(path, 23);
+      
+      if (SD.exists(path)) {
+        Serial.print(path);
+        Serial.println(" exists.                 ");
+      }
+      else {
+        Serial.print(path);
+        Serial.println(" doesnt exist.         ");
+        return;
+      }
+    }
+  }
+  bool writeFileHeader(){
+    myFile = SD.open(path, FILE_WRITE);
+
+    if (myFile) {
+      myFile.print(tday);
+      myFile.print(".");
+      myFile.print(tmonth);
+      myFile.print(".");
+      myFile.println(tyear);
+
+      myFile.close();
+      Serial.println("File header written.");
+    }
+    else {
+      Serial.println("Writing file header failed.");
+      setupSD();
     }
   }
 } gpstracking_task;

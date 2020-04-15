@@ -33,7 +33,7 @@ static bool hasSD = false;
 File uploadFile;
 
 class UploadServer : public Task {
-  public:
+  protected:
     void setup() {
       WiFi.disconnect();
       Serial.begin(9600);
@@ -67,9 +67,10 @@ class UploadServer : public Task {
     server.handleClient();
   }
   
-  void returnOK() {
+  private:
+    void returnOK() {
       server.send(200, "text/plain", "");
-  }
+    }
 
     void returnFail(String msg) {
       server.send(500, "text/plain", msg + "\r\n");

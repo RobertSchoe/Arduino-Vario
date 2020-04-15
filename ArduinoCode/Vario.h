@@ -22,6 +22,8 @@ TinyGPS gps;
 
 //variables for GPS
 float lat, lon, alt;
+int tyear;
+byte tmonth, tday, thour, tminute, tsecond, thundredths;
 unsigned long age;
 bool newData;
 
@@ -31,12 +33,10 @@ class SoundTask : public Task{
   unsigned long time1 = 0;
   float toneFreq = 0, toneFreqLowpass = 0, pressure = 0, lowpassFast = 0, lowpassSlow = 0;
   short ddsAcc = 0, counter = 0;
-  bool readGPS;
   
   protected:
   void setup(){
     time1 = millis() - 20;
-    readGPS = 0;
     pinMode(BUZZER, OUTPUT);
     setupMS5611();
     setupGPS();
@@ -44,12 +44,7 @@ class SoundTask : public Task{
   
   void loop(){
     beep();
-
-    readGPS = readGPS == 1 ? 0 : 1;
-
-    if(readGPS){
-      getGPSData();
-    }
+    getGPSData();
 
     while (millis() < time1);        //loop frequency timer
       time1 += 20;
@@ -62,7 +57,7 @@ class SoundTask : public Task{
   void setupMS5611(){
     Serial.println("setup soundtask");
     if(sensor.connect()>0) {                            //connecting to MS5611
-      Serial.println("Error connecting...");
+      Serial.println("Error connecting to MS5611...");
       delay(500);
       setup();
     }
@@ -86,7 +81,8 @@ class SoundTask : public Task{
         newData = true;       
       }
     }
-    if (newData){
+    if (newData){ 
+      gps.crack_datetime(&tyear, &tmonth, &tday, &thour, &tminute, &tsecond, &thundredths, &age);
       gps.f_get_position(&lat, &lon, &age);
       alt = gps.f_altitude();
       //speed = gps.f_speed_kmph();
@@ -121,12 +117,16 @@ class SoundTask : public Task{
     }
   }
   void printGPSData(){
-    Serial.print("lat=");
-    Serial.print(lat, 6);
-    Serial.print("   lon=");
-    Serial.print(lon, 6);
-    Serial.print("   alt=");
-    Serial.println(alt, 1);
+    Serial.print("lat=");             Serial.print(lat, 6);
+    Serial.print("   lon=");          Serial.print(lon, 6);
+    Serial.print("   alt=");          Serial.println(alt, 1);
+    Serial.print("Year: ");           Serial.print(tyear);
+    Serial.print("  Month: ");        Serial.print(tmonth);
+    Serial.print("  Day: ");          Serial.print(tday);
+    Serial.print("  Hour: ");         Serial.print(thour);
+    Serial.print("  Minute: ");       Serial.print(tminute);
+    Serial.print("  Second: ");       Serial.print(tsecond);
+    Serial.print("  hundreds: ");     Serial.println(thundredths);
   }
 
 } vario_task;
