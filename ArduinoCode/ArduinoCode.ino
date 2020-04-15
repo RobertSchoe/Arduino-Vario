@@ -37,6 +37,7 @@
 #include <Scheduler.h>
 #include "Vario.h"
 #include "PositionLogger.h"
+#include "UploadServer.h"
 
 void setup() { 
   Serial.begin(9600); 
@@ -44,6 +45,7 @@ void setup() {
 
   Scheduler.start(&vario_task);
   Scheduler.start(&gpstracking_task);
+  Scheduler.start(&server_task);
 
   Scheduler.begin();
 }
