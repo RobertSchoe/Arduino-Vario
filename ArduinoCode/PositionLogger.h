@@ -59,10 +59,10 @@ class GPSTask : public Task{
 
       myFile.print(thour);    myFile.print(":");
       myFile.print(tminute);  myFile.print(":");
-      myFile.print(tsecond);  myFile.print("-");
-      myFile.print(lat, 6);   myFile.print(",");
-      myFile.print(lon, 6);   myFile.print(",");
-      myFile.println(alt,1);
+      myFile.print(tsecond);  myFile.print("Z-");
+      myFile.print(lon, 5);   myFile.print(" ");
+      myFile.print(lat, 5);   myFile.print(" ");
+      myFile.println(alt,0);
 
       myFile.close();
       Serial.println("done.");
@@ -114,11 +114,12 @@ class GPSTask : public Task{
     myFile = SD.open(path, FILE_WRITE);
 
     if (myFile) {
-      myFile.print(tday);
-      myFile.print(".");
+      myFile.print(tyear);
+      myFile.print("-");
       myFile.print(tmonth);
-      myFile.print(".");
-      myFile.println(tyear);
+      myFile.print("-");
+      myFile.print(tday);
+      myFile.println("T");
 
       myFile.close();
       Serial.println("File header written.");
