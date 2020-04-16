@@ -27,8 +27,8 @@ class GPSTask : public Task{
   protected:
   void setup(){
     Serial.println("setup sd task");
-    getPath();
     setupSD();
+    getPath();
   }
   
   void loop(){
@@ -99,8 +99,8 @@ class GPSTask : public Task{
       Serial.println(spath);
       spath.toCharArray(path, 23);
       
-      if (SD.exists(path)) {
-        Serial.print(path);
+      if (SD.exists(spath)) {
+        Serial.print(spath);
         Serial.println(" exists.                 ");
       }
       else {
