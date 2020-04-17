@@ -6,7 +6,6 @@
             mc:Ignorable="d"
             xmlns:views="clr-namespace:VarioApp.Views"
             x:Class="VarioApp.Views.MainPage">
-
     <MasterDetailPage.Master>
         <views:MenuPage />
     </MasterDetailPage.Master>
@@ -18,10 +17,9 @@
                     <On Platform="iOS" Value="tab_feed.png"/>
                 </OnPlatform>
             </NavigationPage.Icon>
-            <x:Arguments>
-                <views:ItemsPage />
+                      <x:Arguments>
+                <views:AboutPage />
             </x:Arguments>
         </NavigationPage>
     </MasterDetailPage.Detail>
-    
 </MasterDetailPage>

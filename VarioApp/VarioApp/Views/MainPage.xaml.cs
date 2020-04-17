@@ -22,7 +22,7 @@ namespace VarioApp.Views
             MasterBehavior = MasterBehavior.Popover;
 
             //MenuPages.Add((int)MenuItemType.Browse, (NavigationPage)Detail);
-            //MenuPages.Add((int)MenuItemType.About, (NavigationPage)Detail);
+            NavigateFromMenu(0);
         }
 
         public async Task NavigateFromMenu(int id)

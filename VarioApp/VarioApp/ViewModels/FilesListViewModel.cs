@@ -27,7 +27,7 @@ namespace VarioApp.ViewModels
         }
         async Task ExecuteLoadFilesCommand()
         {
-            WebRequest request = WebRequest.Create("http://192.168.178.48/list?dir=routes");
+            WebRequest request = WebRequest.Create("http://192.168.4.1/list?dir=routes");
             request.Credentials = CredentialCache.DefaultCredentials;
 
             WebResponse response = request.GetResponse();

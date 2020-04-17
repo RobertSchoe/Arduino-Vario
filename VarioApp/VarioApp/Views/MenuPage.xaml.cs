@@ -21,10 +21,10 @@ namespace VarioApp.Views
             menuItems = new List<HomeMenuItem>
             {
 
+                new HomeMenuItem {Id = MenuItemType.About, Title="About" },
                 new HomeMenuItem {Id = MenuItemType.FileList, Title="File List" },
-                new HomeMenuItem {Id = MenuItemType.KMLFileList, Title="KML File List" },
+                new HomeMenuItem {Id = MenuItemType.KMLFileList, Title="KML File List" }
                 //new HomeMenuItem {Id = MenuItemType.Browse, Title="Browse" },
-                new HomeMenuItem {Id = MenuItemType.About, Title="About" }
             };
 
             ListViewMenu.ItemsSource = menuItems;

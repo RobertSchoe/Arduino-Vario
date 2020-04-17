@@ -14,7 +14,7 @@ namespace VarioApp.Services
         {
             string date = "";
             List<KMLPoint> Points = new List<KMLPoint>();
-            WebRequest request = WebRequest.Create("http://192.168.178.48/routes/"+path);
+            WebRequest request = WebRequest.Create("http://192.168.4.1/routes/"+path);
             request.Credentials = CredentialCache.DefaultCredentials;
 
             WebResponse response = request.GetResponse();
